@@ -67,7 +67,7 @@ def main():
     parser.add_argument("--dev",               default="data/test_dev.jsonl")
     parser.add_argument("--workers",     type=int, default=20)
     parser.add_argument("--max-prompt-tokens", type=int, default=2048)
-    parser.add_argument("--runs",        type=int, default=4)
+    parser.add_argument("--runs",        type=int, default=1)
     args = parser.parse_args()
 
     train = load_jsonl(args.train)

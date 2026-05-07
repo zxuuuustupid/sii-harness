@@ -14,15 +14,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 运行命令
 
-```bash
-# 安装依赖
-pip install -r requirements.txt
+> ⚠️ 必须使用 **sii** conda 环境运行：`conda run -n sii python run.py`
+> （sii 环境 transformers 5.8.0 与 tokenizer 兼容；base 环境会报 `'list' object has no attribute 'keys'`）
 
-# 本地调试（默认 4 轮取均值）
-python run.py
+```bash
+# 安装依赖（sii 环境）
+conda run -n sii pip install -r requirements.txt
+
+# 本地调试（默认 4 轮取均值）— 由用户在终端运行
+conda run -n sii python run.py
 
 # 快速单轮测试
-python run.py --runs 1
+conda run -n sii python run.py --runs 1
 
 # 调整并发数
 python run.py --workers 50
