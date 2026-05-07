@@ -31,5 +31,4 @@ Thumbs.db
 
 # Logs
 *.log
-llm_client.py
-llm_client.py
+.env
