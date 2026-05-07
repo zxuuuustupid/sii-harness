@@ -1,0 +1,33 @@
+# Local editor / agent state
+.claude/
+.vscode/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+.env.*
+
+# Test / coverage artifacts
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
