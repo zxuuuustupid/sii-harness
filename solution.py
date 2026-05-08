@@ -9,7 +9,7 @@ solution.py — 考生唯一需要提交的文件
 3. 禁止 import 其他第三方库（openai, sklearn, torch …）。
 4. 禁止通过任何途径读写磁盘文件。
 5. call_llm 每次调用的 prompt token 数若超过 max_prompt_tokens，
-   会被自动截断至预算上限后再发送，
+   会自动截断至预算上限后再发送，
    可用 count_tokens（计算单条消息的 token 数） 和 count_messages_tokens（计算消息列表的总 token 数）预先控制 prompt 长度。
 6. predict() 只接收 text，任何绕过接口获取 label 的行为将导致得分归零。
 """

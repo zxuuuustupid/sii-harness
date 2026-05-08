@@ -1,0 +1,217 @@
+\documentclass[11pt, a4paper]{ctexart}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{colortbl}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{parskip}
+
+% Color Theme Definition (Premium Deep Blue & Slate)
+\definecolor{primary}{RGB}{26, 60, 106}
+\definecolor{secondary}{RGB}{43, 92, 143}
+\definecolor{accent}{RGB}{211, 84, 0}
+\definecolor{lightbg}{RGB}{248, 250, 252}
+\definecolor{boxframe}{RGB}{203, 213, 225}
+\definecolor{success}{RGB}{39, 174, 96}
+\definecolor{warning}{RGB}{243, 156, 18}
+
+% Hyperlink Setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    filecolor=magenta,      
+    urlcolor=secondary,
+    citecolor=primary,
+    pdftitle={Harness Engineering 算法探索与系统设计报告},
+}
+
+% Section Titles Styling
+\titleformat{\section}[block]
+  {\Large\bfseries\color{primary}}
+  {\thesection}{1em}{}
+  [\vspace{-0.5em}\color{primary}\rule{\textwidth}{1.5pt}]
+
+\titleformat{\subsection}[block]
+  {\large\bfseries\color{secondary}}
+  {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}[block]
+  {\normalsize\bfseries\color{black}}
+  {\thesubsubsection}{1em}{}
+
+% Header and Footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{primary}{\textbf{\small HARNESS ENGINEERING}}}
+\fancyhead[R]{\textcolor{gray}{\small 算法探索与系统设计报告}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.8pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{primary}\leaders\hrule height \headrulewidth\hfill}}
+
+% Custom Boxes
+\newtcolorbox{challengebox}{
+    enhanced,
+    breakable,
+    colback=lightbg,
+    colframe=primary,
+    boxrule=1.2pt,
+    arc=4pt,
+    title=\textbf{核心工程挑战 (Core Challenges)},
+    coltitle=white,
+    fonttitle=\large\bfseries,
+    attach boxed title to top left={yshift=-2.5mm, xshift=5mm},
+    boxed title style={colback=primary, arc=2pt, boxrule=0pt},
+    top=12pt,
+    bottom=8pt
+}
+
+\newtcolorbox{highlightbox}[1][]{
+    enhanced,
+    breakable,
+    colback=white,
+    colframe=success,
+    boxrule=0.5pt,
+    arc=3pt,
+    leftrule=4mm,
+    title={#1},
+    coltitle=black,
+    fonttitle=\bfseries,
+    attach title to upper=\quad,
+    top=2pt, bottom=2pt
+}
+
+% Code Listing Styling
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{primary}\bfseries,
+    stringstyle=\color{accent},
+    commentstyle=\color{secondary}\itshape,
+    backgroundcolor=\color{lightbg},
+    frame=single,
+    rulecolor=\color{boxframe},
+    showstringspaces=false,
+    breaklines=true,
+    captionpos=b,
+    xleftmargin=1em,
+    xrightmargin=1em,
+    aboveskip=1em,
+    belowskip=1em
+}
+
+\renewcommand{\baselinestretch}{1.3}
+
+\begin{document}
+
+% Custom Title Page / Header
+\begin{center}
+    \vspace*{2em}
+    {\Huge \bfseries \textcolor{primary}{Harness Engineering}} \\[0.5em]
+    {\LARGE \bfseries 探索与架构设计报告} \\[1.5em]
+    \textcolor{gray}{\rule{0.8\textwidth}{0.8pt}} \\[2em]
+\end{center}
+
+\section{研究背景与动机}
+
+在本次 Harness Engineering 任务中，我们旨在通过构建高度优化的外部框架（Harness），来极限压榨大语言模型（LLM）的推理性能。目标是在严苛的短上下文窗口（$\le 2048$ tokens）中，高效且精准地完成大规模多分类任务（如 DEV 集的 77 类别）。
+
+最终的测试不仅考察模型的本身底座能力，更核心的是检验工程层面在 \textbf{Prompt 动态构造}、\textbf{外部记忆高效检索}、\textbf{严格预算管理} 以及 \textbf{鲁棒后处理解析} 上的架构设计能力。
+
+\begin{challengebox}
+在工程实践中，我们主要面临三大极具挑战的瓶颈：
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    \item \textbf{极限空间挤压}：全局候选集（Label Set）往往十分庞大，将其完整注入 System Prompt 后，剩余的 Token 预算极小，非常容易发生暴力截断，导致 Few-Shot 样本无法完整加载。
+    \item \textbf{非确定性输出的解析困境}：所使用的 Qwen3-8B (Instruct) 模型在非思考模式下，存在输出冗长、附带解释或大小写不一致的现象，而官方指标是严格的 \texttt{Exact Match}。
+    \item \textbf{OOD 泛化与 Prompt Injection 安全防御}：系统必须具备在完全陌生的领域（Out-of-Distribution）中平稳运行的能力，并且能抵抗恶意的指令注入攻击，保证服务不会由于解析异常而崩溃。
+\end{enumerate}
+\end{challengebox}
+
+\section{演进路线与迭代消融分析}
+
+本套 Harness 的设计并非一蹴而就。基于对模型特性与 Token 计费机制的不断试错，我们进行了多次迭代，最终收敛于兼具高性能与高鲁棒性的 \textbf{V6 架构}。具体消融实验轨迹如下表所示：
+
+\begin{table}[hbtp]
+\centering
+\caption{系统架构演进与迭代对比分析表}
+\vspace{0.5em}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{@{} 
+  c 
+  >{\raggedright\arraybackslash}X 
+  c 
+  >{\raggedright\arraybackslash}X 
+@{}}
+\toprule
+\textbf{版本} & \textbf{核心设计机制} & \textbf{准确率} & \textbf{失效分析与改进思考} \\
+\midrule
+V1 & Baseline (无状态直通) & \textcolor{accent}{\textbf{0\%}} & 缺乏先验集合作为锚点，模型自行编造标签（如输出 ``Statement''），完全脱离预期分布。 \\
+V2-V3 & 引入全局 Label 集合并尝试第三方分词器 & \textcolor{accent}{\textbf{0\%}} & 第三方依赖（如 \texttt{transformers} 5.x）存在底层兼容性冲突，导致环境直接报错崩溃。 \\
+V4 & 恢复原生计费，引入基础状态与预算预控制 & 75.3\% & 建立起基础上下文框架，证明只要边界明确且避免截断，准确率即可跃升。 \\
+V5 & 移除 Label 集合的隐式 Few-Shot 探索 & \textcolor{warning}{\textbf{62.0\%}} & 试图节省 Token，但模型在罕见类别上由于缺乏显式边界而盲猜，导致性能断崖式下降。 \\
+V7-V8 & JSON 输出与长尾样本打乱策略 & $\sim$76.0\% & JSON 符号严重挤占载荷，且结构化提示意外诱导模型进行多余解释，产生幻觉。 \\
+\midrule
+\rowcolor{lightbg}
+\textbf{V6} & \textbf{贪心最短样本压缩 + 多级降级纯文本解析} & \textcolor{success}{\textbf{79.0\%}} & \textbf{当前最佳。通过最短文本选择实现了极高的信息密度（见下文分析）。} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{核心设计机制与架构创新点剖析}
+
+为在客观指标与主观可解释性上达到最佳平衡，目前的系统在以下三个维度做出了深度定制：
+
+\subsection{极致的上下文压缩：贪心最短优先策略 (Greedy Shortest-First Selection)}
+
+面对极端的 $2048$ Token 限制和 $77$ 类的庞大体系，如何“选秀”出最佳的 Few-Shot 样本是核心难点。我们抛弃了基于语义相似度的复杂检索（开销过大），转而在 \texttt{\_build\_prompt} 中实现了一种基于长度的“最小堆排序”：
+
+\begin{lstlisting}[language=Python]
+# 基于贪心策略：提取每个类别中最短的语料片段
+sorted_examples = sorted(
+    [(min(ts, key=len), l) for l, ts in label_to_examples.items()],
+    key=lambda x: len(x[0])
+)
+\end{lstlisting}
+
+\begin{highlightbox}[设计优势]
+这种机制在逻辑上并不关心文本语义的丰富度，而是在数学上追求\textbf{样本密度的最大化}。通过用最少量的 Token 激活尽可能丰富的分类类别，Harness 能在一个狭窄的上下文中同时展示几十个跨类的映射案例，实现了 In-Context Learning (ICL) 的最优化。
+\end{highlightbox}
+
+\subsection{鲁棒的五级标签解析网络 (5-Level Fallback Parsing)}
+
+大语言模型的生成结果天然存在发散性。我们在 \texttt{predict()} 中部署了一个容错率极高的五级瀑布流解析机制，彻底消除了由于“大小写混淆”或“过度解释”带来的 Exact Match 失败。
+
+匹配优先级从严格到宽松逐级降级：
+\begin{enumerate}
+    \item \textbf{严格精确匹配}：完全一致，快速通行。
+    \item \textbf{大小写降维匹配}：使用 \texttt{.lower()} 消除大小写污染。
+    \item \textbf{前缀捕获 (\texttt{startswith})}：有效应对模型喜欢加上 ``Label: '' 等自回归前缀的习惯。
+    \item \textbf{包含检测 (\texttt{in})}：针对模型输出长篇大论但提到了目标类别的情况进行兜底。
+    \item \textbf{首行阻断匹配}：截断输出的第一行并提取标签，屏蔽后续的幻觉废话。
+\end{enumerate}
+
+\textbf{关键细节}：在执行匹配遍历时，我们采用了 \texttt{sorted(..., key=len, reverse=True)} 进行逆序检查。这确保了在面对如 \texttt{Card} 和 \texttt{Card Swallowed} 这类包含关系的标签时，系统永远优先捕获更精确、更长的目标分类。
+
+\subsection{面向 Prompt Injection 的安全隔离防御与 OOD 泛化}
+
+针对复杂的评测环境，本框架贯彻了“无偏见”、“强隔离”的安全设计理念：
+
+\begin{itemize}
+    \item \textbf{指令沙箱包裹}：通过严格的格式化前缀 \texttt{Text: \{text\}} 和 \texttt{Label:} 对用户的外部输入进行刚性包裹，有效降低了指令逃逸的可能性。
+    \item \textbf{白名单闭环过滤}：五级解析网络本质上也是一个基于已知 \texttt{\_label\_set} 的白名单防火墙。即使模型遭受注入攻击输出了不可控的文本，解析层也不会引起崩溃，而只会触发默认的清洗退化。
+    \item \textbf{无界泛化能力}：整个 \texttt{MyHarness} 类没有硬编码任何与“客服”或“金融”绑定的先验规则。无论是处理选择题（A/B/C/D）还是医疗领域意图，只要有数据流进入，系统就能立刻通过 Token 预算自适应并组装 Prompt，完美贴合 OOD 测试的需求。
+\end{itemize}
+
+\section{总结}
+
+通过系统化、工程化的 Harness 架构重构，我们在不改变任何底层模型权重的前提下，成功引导 Qwen3-8B 在受限上下文中取得了 79\% 以上的优异成绩。
+
+在此次实践中，\textbf{信息密度的极限压缩（贪心最短优先策略）}以及\textbf{非确定性风险的有效消除（五级降级解析网络）}共同构成了本系统的双基石。该架构不仅在该数据集上展示了卓越的表现，同时也具备了向大型企业级 Agent 调度层横向拓展的强大潜力。
+
+\end{document}

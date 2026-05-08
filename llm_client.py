@@ -23,13 +23,13 @@ if os.path.exists(_env_path):
 # ============================================================
 # 本地测试时，你可以修改这里接入你的 API
 # ============================================================
-BASE_URL = "http://localhost:11434/v1"
-API_KEY  = "ollama"
-MODEL    = "qwen2.5:7b"
+# BASE_URL = "http://localhost:11434/v1"
+# API_KEY  = "ollama"
+# MODEL    = "qwen2.5:7b"
 
-# BASE_URL = "https://api.zhizengzeng.com/v1"
-# API_KEY  = os.environ.get("OPENAI_API_KEY", "")
-# MODEL    = "qwen3-8b"
+BASE_URL = "https://api.zhizengzeng.com/v1"
+API_KEY  = os.environ.get("OPENAI_API_KEY", "")
+MODEL    = "qwen3-8b"
 
 # BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
 # API_KEY  = os.environ.get("ZHIPU_API_KEY", "")
