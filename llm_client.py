@@ -23,9 +23,13 @@ if os.path.exists(_env_path):
 # ============================================================
 # 本地测试时，你可以修改这里接入你的 API
 # ============================================================
-BASE_URL = "https://api.zhizengzeng.com/v1"
-API_KEY  = os.environ.get("OPENAI_API_KEY", "")
-MODEL    = "qwen3-8b"
+BASE_URL = "http://localhost:11434/v1"
+API_KEY  = "ollama"
+MODEL    = "qwen2.5:7b"
+
+# BASE_URL = "https://api.zhizengzeng.com/v1"
+# API_KEY  = os.environ.get("OPENAI_API_KEY", "")
+# MODEL    = "qwen3-8b"
 
 # BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
 # API_KEY  = os.environ.get("ZHIPU_API_KEY", "")
@@ -39,7 +43,7 @@ OPENAI_CONFIG = {
     "base_url": BASE_URL,
     "api_key":  API_KEY,
     "model":    MODEL,
-    "temperature": 1.0,
+    "temperature": 0.7,
     "top_p":       1.0,
     "max_tokens":  8192,
 }
@@ -70,7 +74,7 @@ def call_llm(messages: list[dict], retries: int = 2) -> str:
                 temperature=OPENAI_CONFIG["temperature"],
                 top_p=OPENAI_CONFIG["top_p"],
                 max_tokens=OPENAI_CONFIG["max_tokens"],
-                extra_body={"chat_template_kwargs": {"enable_thinking": False}},
+                extra_body={},
             )
             return resp.choices[0].message.content or ""
         except Exception as e:
